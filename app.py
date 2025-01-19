@@ -32,10 +32,6 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Additional text
-st.markdown("")
-st.markdown("<p style='font-size: 25px;'>Upload doc/image here</p>", unsafe_allow_html=True)
-
 # File uploader
 uploaded_file = st.file_uploader("", type=["jpg", "jpeg", "png", "pdf"])
 
