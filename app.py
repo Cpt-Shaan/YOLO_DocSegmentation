@@ -20,7 +20,7 @@ if model is None:
 # Title with HTML styling using Markdown
 st.markdown("""
     <div style="text-align: center;">
-        <h1 style='color: blue; font-size: 55px;'>Document Segmentation</h1>
+        <h1 style='color: blue; font-size: 50px;'>Document Segmentation using YOLOv10x</h1>
         <h2 style='color: blue; font-size: 40px;'>Seperating documents into different sections and annotating them</h2>
     </div>
 """, unsafe_allow_html=True)
