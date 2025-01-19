@@ -20,13 +20,13 @@ if model is None:
 # Title with HTML styling using Markdown
 st.markdown("""
     <div style="text-align: center;">
-        <h2 style='color: yellow; font-size: 15px;'>Rajas Daryapurkar</h2>
-        <h1 style='color: green; font-size: 60px;'>Text Segmentation using YOLOv10x</h1>
+        <h1 style='color: blue; font-size: 80px;'>Document Segmentation</h1>
+        <h2 style='color: blue; font-size: 50px;'>Seperating documents into different sections and annotating them</h2>
     </div>
 """, unsafe_allow_html=True)
 
 # Additional text
-st.markdown("<p style='font-size: 30px;'>Upload the image/document here.</p>", unsafe_allow_html=True)
+st.markdown("<p style='font-size: 40px;'>UPLOAD DOC / IMAGE HERE</p>", unsafe_allow_html=True)
 
 # File uploader
 uploaded_file = st.file_uploader("", type=["jpg", "jpeg", "png", "pdf"])
@@ -99,7 +99,7 @@ if uploaded_file:
 
             # Create a download button for the annotated image
             st.download_button(
-                label=f"Download Annotated Image - Page {i+1}",
+                label=f"Download Image of the page with annotations- Page {i+1}",
                 data=img_bytes,
                 file_name=f"annotated_image_page_{i+1}.jpg",
                 mime="image/jpeg"
