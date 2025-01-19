@@ -20,13 +20,13 @@ if model is None:
 # Title with HTML styling using Markdown
 st.markdown("""
     <div style="text-align: center;">
-        <h1 style='color: blue; font-size: 80px;'>Document Segmentation</h1>
-        <h2 style='color: blue; font-size: 50px;'>Seperating documents into different sections and annotating them</h2>
+        <h1 style='color: blue; font-size: 55px;'>Document Segmentation</h1>
+        <h2 style='color: blue; font-size: 40px;'>Seperating documents into different sections and annotating them</h2>
     </div>
 """, unsafe_allow_html=True)
 
 # Additional text
-st.markdown("<p style='font-size: 40px;'>UPLOAD DOC / IMAGE HERE</p>", unsafe_allow_html=True)
+st.markdown("<p style='font-size: 25px;'>Upload doc/image here</p>", unsafe_allow_html=True)
 
 # File uploader
 uploaded_file = st.file_uploader("", type=["jpg", "jpeg", "png", "pdf"])
