@@ -16,6 +16,11 @@ if model is None:
     st.error("Failed to load the model. Please check your internet connection and try again.")
     st.stop()
 
+st.markdown("""
+    <style>
+        background: rgba(200,100,10);
+    </style>
+""", unsafe_allow_html=True)
 # Streamlit App
 # Title with HTML styling using Markdown
 st.markdown("""
