@@ -12,5 +12,5 @@ The model uses pretrained weights which may be dowloaded using this [colab noteb
 <img src = "thumbnails/ui.png">
 
 ### Annotations on document
-<img src = "thumbnails/annotated_image_page_2">
-<img src = "thumbnails/annotated_image_page_10">
+<img src = "thumbnails/annotated_image_page_2.jpg">
+<img src = "thumbnails/annotated_image_page_10.jpg">
