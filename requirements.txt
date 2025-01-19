@@ -1,0 +1,9 @@
+streamlit
+torch
+torchvision
+ultralytics
+Pillow
+PyMuPDF
+ultralytics
+fitz
+pdf2image
