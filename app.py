@@ -18,7 +18,7 @@ if model is None:
 
 st.markdown("""
     <style>
-        background: rgba(200,100,10);
+        background-color: rgba(200,100,10);
     </style>
 """, unsafe_allow_html=True)
 # Streamlit App
