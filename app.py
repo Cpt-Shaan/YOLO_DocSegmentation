@@ -1,113 +1,284 @@
+# app.py
+
 import streamlit as st
-from ultralytics import YOLO
+import cv2  # Using opencv-python-headless
+import pytesseract
 from PIL import Image
 from pdf2image import convert_from_path
 import tempfile
 import os
-import cv2
-import fitz  # PyMuPDF
-import torch 
-from model_loader import load_model
+import base64
+from ultralytics import YOLO  # Correct import after installing yolov10
+import supervision as sv
+from groq import Groq
+from pytesseract import Output
+import numpy as np
+import gdown
+import io
 
-# Step 1: Load the model
-model = load_model()
+# Model Download and Loading
 
-if model is None:
-    st.error("Failed to load the model. Please check your internet connection and try again.")
-    st.stop()
+MODEL_DIR = 'models'
+MODEL_FILENAME = 'yolov10x_best.pt'
+MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILENAME)
+FILE_ID = "15YJAUuHYJQlMm0_rjlC-e_VJPmAvjeiE"  # Replace with your actual File ID
+FILE_URL = f"https://drive.google.com/uc?id={FILE_ID}"
 
-st.markdown("""
-    <style>
-        body{
-            color: #2a0141;
-        }
-    </style>
-""", unsafe_allow_html=True)
-# Streamlit App
-# Title with HTML styling using Markdown
-st.markdown("""
-    <div style="text-align: center;">
-        <h1 style='color: blue; font-size: 50px;'>Document Segmentation using YOLOv10x</h1>
-        <h2 style='color: blue; font-size: 40px;'>Seperating documents into different sections and annotating them</h2>
-    </div>
-""", unsafe_allow_html=True)
+@st.cache_resource
+def download_model():
+    """
+    Download the YOLO model from Google Drive if it doesn't exist locally.
+    """
+    if not os.path.exists(MODEL_PATH):
+        st.info("Downloading YOLOv10x model from Google Drive...")
+        os.makedirs(MODEL_DIR, exist_ok=True)
+        try:
+            gdown.download(FILE_URL, MODEL_PATH, quiet=False)
+            st.success(f"Model downloaded successfully at: {MODEL_PATH}")
+        except Exception as e:
+            st.error(f"Error downloading the model: {e}")
+            return None
+    else:
+        st.info(f"Model already exists at: {MODEL_PATH}")
+    return MODEL_PATH
 
-# File uploader
-uploaded_file = st.file_uploader("", type=["jpg", "jpeg", "png", "pdf"])
+@st.cache_resource
+def load_model():
+    """
+    Load the YOLOv10x model from the downloaded file.
+    """
+    model_path = download_model()
+    if model_path:
+        try:
+            model = YOLO(model_path)
+            st.success("YOLOv10x model loaded successfully.")
+            return model
+        except Exception as e:
+            st.error(f"Error loading YOLOv10x model: {e}")
+            return None
+    return None
 
-if uploaded_file:
-    file_type = uploaded_file.name.split('.')[-1].lower()
+# -------------------------------
+# Initialize Groq Client
+# -------------------------------
 
-    if file_type in ["jpg", "jpeg", "png"]:
-        # Convert the uploaded file to a PIL Image
-        image = Image.open(uploaded_file)
+@st.cache_resource
+def initialize_groq_client(api_key):
+    return Groq(api_key=api_key)
 
-        # Display the uploaded image
-        st.image(image, caption="Uploaded Image", use_container_width=True)
+# OCR and Image Description Functions
 
-        # Perform inference
-        results = model(image)
+def get_image_description(client, image_path):
+    with open(image_path, 'rb') as image_file:
+        image_data = base64.b64encode(image_file.read()).decode('utf-8')
 
-        # Convert the annotated image to a NumPy array
-        annotated_image = results[0].plot()
-
-        # Display the annotated image in the Streamlit app
-        st.image(annotated_image, caption="Detected Objects", use_container_width=True)
-
-        # Convert annotated image to byte stream for downloading
-        annotated_image_bgr = cv2.cvtColor(annotated_image, cv2.COLOR_RGB2BGR)
-        _, img_encoded = cv2.imencode('.jpg', annotated_image_bgr)
-        img_bytes = img_encoded.tobytes()
-
-        # Create a download button for the annotated image
-        st.download_button(
-            label="Download Annotated Image",
-            data=img_bytes,
-            file_name="annotated_image.jpg",
-            mime="image/jpeg"
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "Describe this image"},
+                        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_data}"}}
+                    ]
+                }
+            ],
+            model="llama-3.2-11b-vision-preview",
+            stream=False,
         )
+        return chat_completion.choices[0].message.content
+    except Exception as e:
+        st.error(f"Error getting image description: {e}")
+        return "Description not available."
 
-    elif file_type == "pdf":
-        # Save the uploaded PDF to a temporary file
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_pdf_file:
-            temp_pdf_path = temp_pdf_file.name
-            temp_pdf_file.write(uploaded_file.getvalue())
+def perform_ocr(image, detections, client):
+    section_annotations = {}
+    for idx, (box, label) in enumerate(zip(detections.xyxy, detections.class_id)):
+        x_min, y_min, x_max, y_max = map(int, box)
+        cropped_image = image[y_min:y_max, x_min:x_max]
 
-        # Open the PDF using PyMuPDF (fitz)
-        doc = fitz.open(temp_pdf_path)
+        if label != 6:  # Assuming label 6 is 'Picture'
+            ocr_result = pytesseract.image_to_string(cropped_image, config='--psm 6', output_type=Output.STRING).strip()
+            section_name = {
+                0: 'Caption',
+                1: 'Footnote',
+                2: 'Formula',
+                3: 'List-item',
+                4: 'Page-footer',
+                5: 'Page-header',
+                7: 'Section-header',
+                8: 'Table',
+                9: 'Text',
+                10: 'Title'
+            }.get(label, 'Unknown')
 
-        # Process each page
-        for i in range(doc.page_count):
-            page = doc.load_page(i)  # Load the page
+            if section_name not in section_annotations:
+                section_annotations[section_name] = []
 
-            # Convert the page to a PIL image
-            pix = page.get_pixmap()
-            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            section_annotations[section_name].append(ocr_result)
+        else:
+            # Handle 'Picture' labels
+            temp_image_path = f"temp_image_{idx}.png"
+            cv2.imwrite(temp_image_path, cropped_image)
+            description = get_image_description(client, temp_image_path)
+            os.remove(temp_image_path)
 
-            # Display the page as an image
-            st.image(img, caption=f"Page {i+1}", use_container_width=True)
+            if 'Picture' not in section_annotations:
+                section_annotations['Picture'] = []
+            section_annotations['Picture'].append(description)
 
-            # Process the page with YOLO detection
-            results = model(img)
+    return section_annotations
 
-            # Convert the annotated image to a NumPy array
-            annotated_image = results[0].plot()
+def annotate_image(image, detections):
+    bounding_box_annotator = sv.BoundingBoxAnnotator()
+    label_annotator = sv.LabelAnnotator()
 
-            # Display the annotated image in the Streamlit app
-            st.image(annotated_image, caption=f"Detected Objects - Page {i+1}", use_container_width=True)
+    annotated_image = bounding_box_annotator.annotate(scene=image, detections=detections)
+    annotated_image = label_annotator.annotate(scene=annotated_image, detections=detections)
+    return annotated_image
 
-            # Convert annotated image to byte stream for downloading
-            annotated_image_bgr = cv2.cvtColor(annotated_image, cv2.COLOR_RGB2BGR)
-            _, img_encoded = cv2.imencode('.jpg', annotated_image_bgr)
-            img_bytes = img_encoded.tobytes()
+def process_image(model, image, client):
+    results = model(source=image, conf=0.2, iou=0.8)[0]
+    detections = sv.Detections.from_ultralytics(results)
+    annotated_image = annotate_image(image, detections)
 
-            # Create a download button for the annotated image
+    section_annotations = perform_ocr(image, detections, client)
+
+    return annotated_image, section_annotations
+
+def text_to_download(text):
+    # Convert the text to a binary stream (in memory)
+    byte_io = io.BytesIO()
+    byte_io.write(text.encode())
+    byte_io.seek(0)
+    return byte_io
+    
+# Streamlit UI
+
+def main():
+    st.set_page_config(page_title="Document Segmentation using YOLOv10x", layout="wide")
+    st.markdown("""
+        <style>
+            body { color: #2a0141; }
+            .title { color: green; font-size: 40px; text-align: center; }
+            .subtitle { color: yellow; font-size: 30px; text-align: center; }
+        </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+        <div class="title">Document Segmentation using YOLOv10x</div>
+        <div class="subtitle">Separating documents into different sections and annotating them</div>
+        <div class="subtitle">Performing OCR on textual data and Image analysis on Images</div>
+    """, unsafe_allow_html=True)
+
+    # File uploader
+    uploaded_file = st.file_uploader("Upload an image or PDF file", type=["jpg", "jpeg", "png", "pdf"])
+
+    if uploaded_file:
+        file_type = uploaded_file.name.split('.')[-1].lower()
+
+        # Load the YOLOv10x model
+        model = load_model()
+
+        if model is None:
+            st.error("Failed to load the YOLOv10x model. Please try again later.")
+            st.stop()
+
+        # Initialize Groq client with your API key
+        try:
+            groq_api_key = "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"
+        except KeyError:
+            st.error("GROQ API key not found. Please add it to the Streamlit secrets.")
+            st.stop()
+
+        client = initialize_groq_client(api_key = groq_api_key)
+
+        if file_type in ["jpg", "jpeg", "png"]:
+            # Process image files
+            image = Image.open(uploaded_file).convert("RGB")
+            image_np = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+
+            st.image(image, caption="Uploaded Image", use_column_width=True)
+
+            with st.spinner("Processing image..."):
+                annotated_image, annotations = process_image(model, image_np, client)
+
+            st.image(cv2.cvtColor(annotated_image, cv2.COLOR_BGR2RGB), caption="Annotated Image", use_column_width=True)
+
+            st.subheader("Extracted Sections:")
+
+            download_text = ""
+            for section, texts in annotations.items():
+                download_text += section + "\n"
+                st.markdown(f"**{section}:**")
+                for text in texts:
+                    download_text += text + "\n"
+                    st.markdown(f"- {text}")
+
+            # Download extracted text / image-analysis
             st.download_button(
-                label=f"Download Image of the page with annotations- Page {i+1}",
-                data=img_bytes,
-                file_name=f"annotated_image_page_{i+1}.jpg",
+                label="Download as .txt file",
+                data=text_to_download(download_text),
+                file_name="image_extracted_text.txt",
+                mime="text/plain"
+            )
+            
+            # Download annotated image
+            _, img_encoded = cv2.imencode('.jpg', annotated_image)
+            st.download_button(
+                label="Download Image with annotations",
+                data=img_encoded.tobytes(),
+                file_name="annotated_image.jpg",
                 mime="image/jpeg"
             )
 
-        # Clean up the temporary file
-        os.remove(temp_pdf_path)
+        elif file_type == "pdf":
+            # Process PDF files
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_pdf_file:
+                temp_pdf_path = temp_pdf_file.name
+                temp_pdf_file.write(uploaded_file.getvalue())
+
+            try:
+                pages = convert_from_path(temp_pdf_path, dpi=300)
+                for i, page in enumerate(pages, start=1):
+                    st.image(page, caption=f"Page {i}", use_column_width=True)
+                    page_np = cv2.cvtColor(np.array(page), cv2.COLOR_RGB2BGR)
+
+                    with st.spinner(f"Processing Page {i}..."):
+                        annotated_image, annotations = process_image(model, page_np, client)
+
+                    st.image(cv2.cvtColor(annotated_image, cv2.COLOR_BGR2RGB), caption=f"Annotated Page {i}", use_column_width=True)
+
+                    st.subheader(f"Extracted Sections from Page {i}:")
+                            
+                    download_text = ""
+                    for section, texts in annotations.items():
+                        download_text += section + "\n"
+                        st.markdown(f"**{section}:**")
+                        for text in texts:
+                            download_text += text + "\n"
+                            st.markdown(f"- {text}")
+
+                    # Download extracted text / image-analysis
+                    st.download_button(
+                        label="Download extracted text as .txt file for Page {i}",
+                        data=text_to_download(download_text),
+                        file_name="image_extracted_text_page{i}.txt",
+                        mime="text/plain"
+                    )
+                    
+                    # Download annotated image
+                    _, img_encoded = cv2.imencode('.jpg', annotated_image)
+                    st.download_button(
+                        label=f"Download Annotated Image - Page {i}",
+                        data=img_encoded.tobytes(),
+                        file_name=f"annotated_page_{i}.jpg",
+                        mime="image/jpeg"
+                    )
+            except Exception as e:
+                st.error(f"Error processing PDF: {e}")
+            finally:
+                os.remove(temp_pdf_path)
+
+if __name__ == "__main__":
+    main()
