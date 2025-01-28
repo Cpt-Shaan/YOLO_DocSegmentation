@@ -220,7 +220,7 @@ def main():
                 label="Download as .txt file",
                 data=text_to_download(download_text),
                 file_name="image_extracted_text.txt",
-                mime="text/plain"
+                mime="text/plain",
                 key="text_download_button"
             )
             
@@ -230,7 +230,7 @@ def main():
                 label="Download Image with annotations",
                 data=img_encoded.tobytes(),
                 file_name="annotated_image.jpg",
-                mime="image/jpeg"
+                mime="image/jpeg",
                 key="image_download_button"
             )
 
@@ -266,7 +266,7 @@ def main():
                         label="Download extracted text as .txt file for Page {i}",
                         data=text_to_download(download_text),
                         file_name="image_extracted_text_page{i}.txt",
-                        mime="text/plain"
+                        mime="text/plain",
                         key="text_download_button"
                     )
                     
@@ -276,7 +276,7 @@ def main():
                         label=f"Download Annotated Image - Page {i}",
                         data=img_encoded.tobytes(),
                         file_name=f"annotated_page_{i}.jpg",
-                        mime="image/jpeg"
+                        mime="image/jpeg",
                         key="image_download_button"
                     )
             except Exception as e:
