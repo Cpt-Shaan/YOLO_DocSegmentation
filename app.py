@@ -8,7 +8,7 @@ from pdf2image import convert_from_path
 import tempfile
 import os
 import base64
-from ultralytics import YOLO  # Correct import after installing yolov10
+from ultralytics import YOLO  
 import supervision as sv
 from groq import Groq
 from pytesseract import Output
@@ -263,7 +263,7 @@ def main():
 
                     # Download extracted text / image-analysis
                     st.download_button(
-                        label="Download extracted text as .txt file for Page {i}",
+                        label=f"Download extracted text as .txt file for Page {i}",
                         data=text_to_download(download_text),
                         file_name=f"image_extracted_text_page{i}.txt",
                         mime="text/plain",
