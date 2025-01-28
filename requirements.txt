@@ -8,3 +8,7 @@ numpy
 gdown
 pdf2image
 PyMuPDF
+supervision
+pytesseract
+groq
+huggingface_hub
