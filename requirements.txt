@@ -12,4 +12,3 @@ supervision
 pytesseract
 groq
 huggingface_hub
-io
