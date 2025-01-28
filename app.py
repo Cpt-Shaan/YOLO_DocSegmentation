@@ -265,9 +265,9 @@ def main():
                     st.download_button(
                         label="Download extracted text as .txt file for Page {i}",
                         data=text_to_download(download_text),
-                        file_name="image_extracted_text_page{i}.txt",
+                        file_name=f"image_extracted_text_page{i}.txt",
                         mime="text/plain",
-                        key="text_download_button"
+                        key=f"text_download_button_{i}"
                     )
                     
                     # Download annotated image
@@ -277,7 +277,7 @@ def main():
                         data=img_encoded.tobytes(),
                         file_name=f"annotated_page_{i}.jpg",
                         mime="image/jpeg",
-                        key="image_download_button"
+                        key=f"image_download_button_{i}"
                     )
             except Exception as e:
                 st.error(f"Error processing PDF: {e}")
