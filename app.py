@@ -221,6 +221,7 @@ def main():
                 data=text_to_download(download_text),
                 file_name="image_extracted_text.txt",
                 mime="text/plain"
+                key="text_download_button"
             )
             
             # Download annotated image
@@ -230,6 +231,7 @@ def main():
                 data=img_encoded.tobytes(),
                 file_name="annotated_image.jpg",
                 mime="image/jpeg"
+                key="image_download_button"
             )
 
         elif file_type == "pdf":
@@ -265,6 +267,7 @@ def main():
                         data=text_to_download(download_text),
                         file_name="image_extracted_text_page{i}.txt",
                         mime="text/plain"
+                        key="text_download_button"
                     )
                     
                     # Download annotated image
@@ -274,6 +277,7 @@ def main():
                         data=img_encoded.tobytes(),
                         file_name=f"annotated_page_{i}.jpg",
                         mime="image/jpeg"
+                        key="image_download_button"
                     )
             except Exception as e:
                 st.error(f"Error processing PDF: {e}")
