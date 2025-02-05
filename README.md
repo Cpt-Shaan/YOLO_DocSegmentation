@@ -6,7 +6,7 @@ The web-app also performs OCR on the text-based annotated sections, and image-an
 OCR is performed on the text using the tesseract-ocr package.
 For image analysis, we have used llama-3.2-11b-vision model. 
 
-This app uses the YOLOv10x model for document segmentation to annotate various sections of a document such as text-fileds, formulae, pictures, list-items,etc.
+This app uses the YOLOv10x model for document segmentation to annotate various sections of a document such as text-fields, formulae, pictures, list-items,etc.
 The model uses pretrained weights which may be dowloaded using this [colab notebook](Doc_analysis.ipynb).
 
 [Link](https://yolodocsegmentation-es8sgqcljerv9ei2wgukq9.streamlit.app/) for deployed web-application using streamlit.
