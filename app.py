@@ -186,7 +186,7 @@ def main():
 
         # Initialize Groq client with your API key
         try:
-            groq_api_key = "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"
+            groq_api_key = os.getenv("GROQ_API_KEY")
         except KeyError:
             st.error("GROQ API key not found. Please add it to the Streamlit secrets.")
             st.stop()
