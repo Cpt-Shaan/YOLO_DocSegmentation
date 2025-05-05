@@ -83,7 +83,7 @@ def get_image_description(client, image_path):
                     ]
                 }
             ],
-            model="llama3-8b-8192",
+            model="meta-llama/llama-4-maverick-17b-128e-instruct",
             stream=False,
         )
         return chat_completion.choices[0].message.content
