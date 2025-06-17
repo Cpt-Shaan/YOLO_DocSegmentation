@@ -11,6 +11,20 @@ The model uses pretrained weights which may be dowloaded using this [colab noteb
 
 [Link](https://yolodocsegmentation-es8sgqcljerv9ei2wgukq9.streamlit.app/) for deployed web-application using streamlit.
 
+## Installation
+
+1. **Clone the repository**
+   
+   ```bash
+   git clone https://github.com/Cpt-Shaan/YOLO_DocSegmentation.git
+   cd YOLO_DocSegmentation
+2. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+
+## Use of API
+The application makes use of a llama-3.2-11b-vison model, which provides its inference results for image analysis via an API by Groq. 
+
 ## Website Interface and Results
 <img src = "thumbnails/web_layout.png">
 
