@@ -8,7 +8,7 @@ numpy
 gdown
 pdf2image
 PyMuPDF
-supervision
+supervision>=0.7.0
 pytesseract
 groq
 huggingface_hub
