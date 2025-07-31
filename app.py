@@ -130,7 +130,7 @@ def perform_ocr(image, detections, client):
     return section_annotations
 
 def annotate_image(image, detections):
-    bounding_box_annotator = sv.BoundingBoxAnnotator()
+    bounding_box_annotator = sv.BoxAnnotator()
     label_annotator = sv.LabelAnnotator()
 
     annotated_image = bounding_box_annotator.annotate(scene=image, detections=detections)
